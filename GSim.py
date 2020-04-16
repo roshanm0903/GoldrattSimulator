@@ -12,7 +12,7 @@ from pygame.locals import (
     QUIT,
 )
 
-SCREEN_WIDTH = 1400
+SCREEN_WIDTH = 1388
 SCREEN_HEIGHT = 800
 
 WINDOW_WIDTH = 460
@@ -21,6 +21,8 @@ WINDOW_HEIGHT = 460
 REGION_WIDTH = 200
 REGION_HEIGHT = 200
 
+LIGHT_GREY = (140,140,140)
+GREY = (130,130,130)
 
 BLACK = (  0,   0,   0)
 WHITE = (255, 255, 255)
@@ -29,15 +31,16 @@ RED   = (255,   0,   0)
 GREEN = (  0, 255,   0)
 BLUE  = (  0,   0, 255)
 
-BROWN = (  255,   0, 255)
-PINK =(  255,   220, 220)
-CYAN = (  20,   20, 255)
+BROWN = (  150,  75,   0)
+PINK =  (  255,  125, 200)
+CYAN =  (  0,   255, 255)
 
 BACKGROUND = ( 255, 255, 220)
 
 
 BLOCK_SIZE = 50
 
+display_quantity = True
 layout_elements = {}
 layout_elements.update([("test",4)])
 print(layout_elements)
@@ -46,50 +49,58 @@ print(layout_elements)
 
 class Button():
 
-    def __init__(self, pos):
+    def __init__(self,size,pos,default_color,pressed_color):
 
-        self.image_normal = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE))
-        self.image_normal.fill(GREEN)
+        self.image_normal = pygame.Surface(size)
+        self.image_normal.fill(default_color)
 
-        self.image_hovered = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE))
-        self.image_hovered.fill(RED)
+        self.image_pressed = pygame.Surface(size)
+        self.image_pressed.fill(pressed_color)
 
         self.image = self.image_normal
         
-        self.rect = self.image.get_rect(topleft=pos)
+        self.rect = self.image.get_rect(center=pos)
         #self.rect.center = screen_rect.center
 
-        self.hovered = False
         self.clicked = False
 
     def update(self):
+        global display_quantity
 
-        if self.hovered:
+        if self.clicked:
             self.image = self.image_normal
+            display_quantity = True
         else:
-            self.image = self.image_hovered
-        
+            self.image = self.image_pressed
+            display_quantity = False
+
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.rect.collidepoint(event.pos):
+                self.clicked = not self.clicked
             #if self.rect.collidepoint(event.pos)
             #    self.hovered = True
             #else:
             #    self.hovered = False
         
-            self.hovered = self.rect.collidepoint(event.pos)
-
+            # self.hovered = self.rect.collidepoint(event.pos)
 
 class Machine(pygame.sprite.Sprite):
-    def __init__(self,pos):
+    def __init__(self,pos,item):
         super(Machine,self).__init__()
         self.id = 0
-        self.surf = pygame.Surface((20,20))
-        self.color = "None"
-        self.surf.fill((0,0,0))
-        self.setup_time = 10
+
+        self.sur = pygame.Surface((50,50))
+        self.color = BLACK
+
+        self.update_color(item[0].capitalize())
+        
+        self.sur.fill(self.color)
+
+        self.setup_time = item[2]
         self.status_idle = True
         self.status_setup = False
         self.status_running = False
@@ -98,54 +109,10 @@ class Machine(pygame.sprite.Sprite):
         self.total_runtime = 0
         self.total_setuptime = 0
 
-        self.rect = self.surf.get_rect(topleft=pos)
+        self.rect = self.sur.get_rect(center=pos)
 
         # self.hovered = False
         self.clicked = False
-
-
-        
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
-
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEMOTION:
-            #if self.rect.collidepoint(event.pos)
-            #    self.hovered = True
-            #else:
-            #    self.hovered = False
-        
-            self.hovered = self.rect.collidepoint(event.pos)
-
-class Workstation():
-    def __init__(self,item,pos):
-        global layout_elements
-        #what kind of machine
-        self.id = item[0]
-        self.predecessor = 0
-        self.successor = 0
-        self.color = BLACK
-        self.update_color(item[1].capitalize())
-
-        self.sur = pygame.Surface((52, 32))
-        self.sur.fill(BACKGROUND)
-    
-        pygame.draw.ellipse(self.sur,BLACK,(0,0,52,32))
-        pygame.draw.ellipse(self.sur,self.color,(1,1,50,30))
-        
-        self.pos = (pos[1]*100 + 600 , 100 + (pos[0])*75)
-        layout_elements[self.id]=self.pos
-
-        self.rect = self.sur.get_rect(center= self.pos )
-        
-        # add machine object --> need to check documentation
-        
-
-        self.utilization = 0.0   #keep track of utilization
-        self.total_runtime = 0
-        self.total_setuptime = 0
-
-
 
     def update_color(self , clr):
         if clr == "Blue":
@@ -160,21 +127,18 @@ class Workstation():
             self.color = GREEN
         elif clr.capitalize() == "Brown":
             self.color = BROWN
-
-
-    def update(self):
-        pass
         
     def draw(self, surface):
         surface.blit(self.sur, self.rect)
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # pop = rm_popup("rm")
-            # pop.master.title("Power Bar")
-            # pop.mainloop()
-            pass
-
+        if event.type == pygame.MOUSEMOTION:
+            #if self.rect.collidepoint(event.pos)
+            #    self.hovered = True
+            #else:
+            #    self.hovered = False
+        
+            self.hovered = self.rect.collidepoint(event.pos)
 
 class Config():
     def __init__(self,filename):
@@ -255,12 +219,10 @@ class Config():
         self.wb.release_resources()
         del self.wb
 
-
-
 class Text():
-    def __init__(self,text,pos,size):
+    def __init__(self,text,pos,size,bg=BACKGROUND):
         self.font = pygame.font.Font('freesansbold.ttf', size) 
-        self.text = self.font.render(text, True, BLACK,BACKGROUND) 
+        self.text = self.font.render(text, True, BLACK,bg) 
         self.rect = self.text.get_rect()  
         # set the center of the rectangular object. 
         self.rect.center = pos 
@@ -274,6 +236,9 @@ class Text():
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             pass
+    
+    def __del__(self):
+        pass 
 
 class Account():
     def __init__(self):
@@ -350,8 +315,6 @@ class Demand():
         self.buffer = item[1]
         self.selling_price = item[2]
 
-        self.text = self.buffer #toggle this to cost based on a universal button
-
         self.sur = pygame.Surface((52, 32))
         self.sur.fill(BACKGROUND)
 
@@ -362,19 +325,25 @@ class Demand():
 
         layout_elements[self.id]=self.pos
         self.rect = self.sur.get_rect(center=self.pos)
-        # print(pos)
-
+        
+        self.text = Text("0",(self.pos[0],self.pos[1]) ,16,WHITE)
+        
     def update(self):
+        global display_quantity
+        #check state of mode and then pass approporitate value
+        if display_quantity:
+            self.text = Text(str(self.buffer),(self.pos[0],self.pos[1]) ,16,WHITE)
+        else:
+            self.text = Text("$ "+str(self.selling_price),(self.pos[0],self.pos[1] ) ,16,WHITE)    
+
         pass
         
     def draw(self, surface):
         surface.blit(self.sur, self.rect)
+        self.text.draw(surface)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # pop = rm_popup("rm")
-            # pop.master.title("Power Bar")
-            # pop.mainloop()
             pass
 
 class Links():
@@ -401,16 +370,13 @@ class Links():
             # pop.mainloop()
             pass
 
-
 class RawMaterial():
     def __init__(self,item,pos):
         global layout_elements
 
         self.id = item[0]
         self.buffer = item[1]
-        self.cost = item[2]
-
-        self.text = self.buffer #toggle this to cost based on a universal button
+        self.cost_price = item[2]
 
         self.sur = pygame.Surface((52, 32))
         self.sur.fill(BACKGROUND)
@@ -424,13 +390,21 @@ class RawMaterial():
 
 
         self.rect = self.sur.get_rect(center=self.pos)
-        # print(pos)
+        
+        self.text = Text("0",(self.pos[0],self.pos[1]) ,16,WHITE)
 
     def update(self):
-        pass
+        global display_quantity
+        #check state of mode and then pass approporitate value
+        if display_quantity:
+            self.text = Text(str(self.buffer),(self.pos[0],self.pos[1]) ,16,WHITE)
+        else:
+            self.text = Text("$ "+str(self.cost_price),(self.pos[0],self.pos[1] ) ,16,WHITE)    
+
         
     def draw(self, surface):
         surface.blit(self.sur, self.rect)
+        self.text.draw(surface)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -439,7 +413,74 @@ class RawMaterial():
             # pop.mainloop()
             pass
 
+class Workstation():
+    def __init__(self,item,pos):
+        global layout_elements
+        #what kind of machine
+        self.id = item[0]
+        self.predecessor = 0
+        self.successor = 0
+        self.color = BLACK
+        self.update_color(item[1].capitalize())
+
+        self.sur = pygame.Surface((52, 57))
+        self.sur.fill(BACKGROUND)
+                  
+        pygame.draw.ellipse(self.sur,BLACK,(0,25,52,32))
+        pygame.draw.ellipse(self.sur,self.color,(1,26,50,30))
+
+        pygame.draw.rect(self.sur,BLACK,(0,0,50,25))
+        pygame.draw.rect(self.sur,WHITE,(1,1,48,23)) 
+
+        self.pos = (pos[1]*100 + 600 , 100 + (pos[0])*75)
+        layout_elements[self.id]=self.pos
         
+        self.buffer_text = Text("0",(self.pos[0],self.pos[1] - 15) ,16,WHITE)
+        self.process_time_text = Text("0",(self.pos[0],self.pos[1] + 15),16,self.color)
+
+        self.rect = self.sur.get_rect(center= self.pos )
+
+        # add machine object --> need to check documentation
+        
+        self.buffer = item[3]
+        self.process_time = item[2]
+        self.utilization = 0.0   #keep track of utilization
+        self.total_runtime = 0
+        self.total_setuptime = 0
+       
+
+    def update_color(self , clr):
+        if clr == "Blue":
+            self.color = BLUE
+        elif clr.capitalize() == "Red":
+            self.color = RED
+        elif clr.capitalize() == "Cyan":
+            self.color = CYAN
+        elif clr.capitalize() == "Pink":
+            self.color = PINK
+        elif clr.capitalize() == "Green":
+            self.color = GREEN
+        elif clr.capitalize() == "Brown":
+            self.color = BROWN
+
+
+    def update(self):
+        self.buffer_text = Text(self.buffer,(self.pos[0],self.pos[1] - 15) ,16,WHITE)
+        pass
+        
+    def draw(self, surface):
+        surface.blit(self.sur, self.rect)
+        self.buffer_text.draw(surface)
+        self.process_time_text.draw(surface)
+        
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # pop = rm_popup("rm")
+            # pop.master.title("Power Bar")
+            # pop.mainloop()
+            pass
+       
 class Layout():
     def __init__(self):
         self.temp = 0
@@ -480,7 +521,30 @@ class Layout():
             ws = Workstation(config.workstations[item],config.workstation_pos[item])
             self.elements.append(ws)
 
+        #other buttons
+        btn = Button((80,30),(60, 30),GREY,LIGHT_GREY)
+        btn_text = Text("Toggle",(60,30) ,16, GREY)
+
+        self.elements.append(btn)
+        self.elements.append(btn_text)
+        
+        setup_text = Text("Setup",(150,30) ,16)
+        self.elements.append(setup_text)
+        
+        # add machines in the left pane
+
+        for item in range(len(config.machine_list)):
+            for no in range(int(config.machine_list[item][1])):
+                machine = Machine( (40 + 150 + no*70 , 80 + item*75 )  ,config.machine_list[item])
+                self.elements.append(machine)
+                txt = Text(str(int(config.machine_list[item][2])),(150,80 + item*75) ,16)
+                self.elements.append( txt )
+
+
         self.links_list = config.links_list
+
+
+
 
 class App():
     def __init__(self):
@@ -505,13 +569,6 @@ class App():
     def create_objects(self):
         global layout_elements
         # self.widgets.append(layout.elements[1])
-
-        size = BLOCK_SIZE + 5
-        
-        for row in range(5):
-            for col in range(5):
-                btn = Button((size*col, size*row))
-                self.widgets.append(btn)
         
         layout_elements = {}
         layout = Layout() 
@@ -520,10 +577,8 @@ class App():
 
         for ele in layout.elements:
             self.widgets.append(ele)
-
-
-        print (layout_elements)
-    # --- functions ---
+        # print (layout_elements)
+    
 
     def handle_event(self, event):
         for widget in self.widgets:
@@ -531,14 +586,11 @@ class App():
 
     def update(self):
         # self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT),pygame.RESIZABLE)
-
         for widget in self.widgets:
             widget.update()
 
 
-
     def draw(self, surface):
-
 
         # lines = Lines()
         for i in range(len(self.list)):
@@ -591,7 +643,5 @@ class App():
 
 
 if __name__ == '__main__':
-    
-    
-
+        
     App().mainloop()
