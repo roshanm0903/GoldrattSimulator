@@ -14,8 +14,8 @@ from pygame.locals import (
 
 FRAME_RATE = 60
 SIM_SPEEED = 0  # 0-30
-TICKS = 0     #increment this whenever the simulation is running, gives second, use it to calculate the day of the week and the time.
-SIM_RUN = True    # use this for start and freeze sim
+TICKS = int(0)     #increment this whenever the simulation is running, gives second, use it to calculate the day of the week and the time.
+SIM_RUN = False    # use this for start and freeze sim
 
 
 SCREEN_WIDTH = 1388
@@ -104,7 +104,7 @@ class Inc_spd_button(Button):
         if self.clicked and SIM_SPEEED < 31:
             SIM_SPEEED += 3
 
-        print(SIM_SPEEED)
+        # print(SIM_SPEEED)
         self.clicked = False
 
     def handle_event(self, event):
@@ -119,7 +119,7 @@ class Dec_spd_button(Button):
         if self.clicked and SIM_SPEEED > 1:
             SIM_SPEEED -= 3
 
-        print(SIM_SPEEED)
+        # print(SIM_SPEEED)
         self.clicked = False
 
     def handle_event(self, event):
@@ -127,62 +127,89 @@ class Dec_spd_button(Button):
             if self.rect.collidepoint(event.pos):
                 self.clicked = True
 
-# fdafd
 
-class Sim_control(Button):
-    def __init__(Button,self):
-        
-        self.sur = pygame.Surface((100,100))
-        
+
+class Sim_control():
+    def __init__(self,size,pos,run_color,stopped_color):
+        self.run_color = run_color
+        self.stopped_color = stopped_color
+        self.color = self.stopped_color
+
+        self.pos = pos
+        self.sur = pygame.Surface(size)
+        self.sur.fill(self.color)
+
         self.rect = self.sur.get_rect(center=pos)
-        
-        self.pane_pos = pos
-        self.pos = self.pane_pos
 
-        self.grid_loc = "--"
-        self.status = "Idle"
-        self.gird_loc_text = Text(self.grid_loc,(self.pos[0],self.pos[1] +10) ,16,self.color)
-        self.status_text = Text(self.status,(self.pos[0],self.pos[1] + 10),14,self.color)
+        self.status = "STOPPED"
 
-
+        # self.PACE_text = Text(self.grid_loc,(100,100) ,20,WHITE)
+        self.status_text = Text(self.status,(100,100),20,WHITE)
         # self.hovered = False
         self.clicked = False
 
-    def update_color(self , clr):
-        pass
+    def update(self):
+        global SIM_RUN
 
-    # def update(self):
+        if self.clicked:
+            self.status = "RUNNING"
+            self.color = self.run_color
+            SIM_RUN = True
 
-    #     if self.clicked:
-    #         self.sur.fill(LIGHT_GREY)
-    #         pa
-    #     else:
-    #         self.sur.fill(self.color)
+        else:
+            self.status = "STOPPED"
+            self.color = self.stopped_color
+            SIM_RUN = False
 
-        
-    #     self.gird_loc_text = Text(self.grid_loc,(self.pos[0],self.pos[1] - 5) ,16,self.color)
-    #     self.status_text = Text(self.status,(self.pos[0],self.pos[1] + 10),14,self.color)
+        self.sur.fill(self.color)
+        # self.gird_loc_text = Text(self.grid_loc,(self.pos[0],self.pos[1] - 5) ,16,self.color)
+        self.status_text = Text(self.status,(self.pos[0],self.pos[1]),26,self.color)
         
     def draw(self, surface):
         surface.blit(self.sur, self.rect)
-        self.gird_loc_text.draw(surface)
+        # self.gird_loc_text.draw(surface)
         self.status_text.draw(surface)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
-                self.clicked = True
+                self.clicked = not self.clicked
+       
+class Display_time(Button):
+    def __init__(self,size,pos):
 
-        if self.clicked:
+        self.pos = pos
 
-            if event.type == pygame.MOUSEBUTTONUP:
-                self.clicked = False
-                self.pos = self.pane_pos
-                self.add_machine_to_ws(event.pos)  #add machine to workstation
-                # print(event.pos,"next line")
+        self.sur = pygame.Surface(size)
+        self.sur.fill(LIGHT_GREY)
 
-            if event.type == pygame.MOUSEMOTION:        
-                self.pos = event.pos
+        self.rect = self.sur.get_rect(center=pos)
+
+        self.day = 1
+        self.time = "0 : 00"
+        self.day_text = Text("Day : " + str(self.day) ,(100,25),20,WHITE)
+        self.time_text = Text(self.time,(100,75),20,WHITE)
+
+    def update(self):
+        self.compute_time()
+        self.day_text = Text("Day : " + str(self.day),  (self.pos[0],self.pos[1]-20) ,18,LIGHT_GREY)
+        self.time_text = Text(self.time,(self.pos[0],self.pos[1] + 20),18,LIGHT_GREY)
+        
+    def draw(self, surface):
+        # print("Draw function called?")
+        surface.blit(self.sur, self.rect)
+        self.day_text.draw(surface)
+        self.time_text.draw(surface)
+
+    def compute_time(self):
+        global TICKS
+        # print("Tick" , TICKS)
+        a = TICKS
+        self.time = ""
+        self.day =  int( a / (8*60))
+        a = a%(8*60)
+        self.time = self.time + str( int(a/60)) + " : " +  str( int(a%60))
+        
 
 
 class Machine():
@@ -810,30 +837,35 @@ class Layout():
         self.time_accounts()
     
     def update(self):
-        self.interface_buttons()
+        # self.interface_buttons()
+        pass
 
     def interface_buttons(self):
-        global SIM_SPEEED
         
-        btn = Toggle_button((80,30),(60, 30),GREY,LIGHT_GREY)    #Toggle buttons
-        btn_text = Text("Toggle",(60,30) ,16, LIGHT_GREY)
+        btn = Toggle_button((80,30),(75, 30),GREY,LIGHT_GREY)    #Toggle buttons
+        btn_text = Text("Toggle",(75,30) ,16, LIGHT_GREY)
         self.elements.append(btn)
         self.elements.append(btn_text)
 
-        inc_spd_btn = Inc_spd_button((30,30),(90, 500),GREY,LIGHT_GREY)    #sim speed inc buttons
-        inc_spd_text = Text("+",(90,500) ,24, LIGHT_GREY)
+        inc_spd_btn = Inc_spd_button((30,30),(110, 325),GREY,LIGHT_GREY)    #sim speed inc buttons
+        inc_spd_text = Text("+",(110,325) ,24, LIGHT_GREY)
         self.elements.append(inc_spd_btn)
         self.elements.append(inc_spd_text)
         
-        dec_spd_btn = Dec_spd_button((30,30),(30, 500),GREY,LIGHT_GREY)    #sim speed dec buttons
-        dec_spd_text = Text("-",(30,500) ,24, LIGHT_GREY)
+        dec_spd_btn = Dec_spd_button((30,30),(40, 325),GREY,LIGHT_GREY)    #sim speed dec buttons
+        dec_spd_text = Text("-",(40,325) ,24, LIGHT_GREY)
         self.elements.append(dec_spd_btn)
         self.elements.append(dec_spd_text)
      
-        main_control = Sim_control((100,100),(30,600),GREEN,RED)
+        main_control = Sim_control((120,80),(75,400),GREEN,RED)
         self.elements.append(main_control)
 
+        # main_control2 = Sim_control((120,80),(75,600),GREEN,RED)
+        # self.elements.append(main_control2)
+
     def time_accounts(self):
+        main_control1 = Display_time((120,80),(75,500))
+        self.elements.append(main_control1)
         pass
 
     def add_factory(self,config):
@@ -957,10 +989,8 @@ class App():
 
         for ele in layout.elements:
             self.widgets.append(ele)
-        # print (layout_elements)
     
         # update downstream(successor) and upsteam(predecessor)
-
         for item in workstation_objects:
             for xws in all_objects:
                 for ws in item.details[4].split("-"):
@@ -984,7 +1014,6 @@ class App():
             # print(item.next[0].buffer)
 
 
-
     def handle_event(self, event):
         for widget in self.widgets:
             widget.handle_event(event)
@@ -998,16 +1027,19 @@ class App():
         for widget in self.widgets:
             widget.update()
 
-
         if SIM_RUN:
             self.update_statuses()
+            
      
     
     def update_statuses(self):
         global TICKS
+
         self.loopno += 1
-        TICKS +=1
+        
+
         if self.loopno >= int(FRAME_RATE / ( 1 + SIM_SPEEED)):
+            TICKS += 1
             self.loopno = 0
             for ele in all_objects:
                 ele.set_status()
