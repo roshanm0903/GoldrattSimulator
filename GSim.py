@@ -16,7 +16,7 @@ FRAME_RATE = 60
 SIM_SPEEED = 0  # 0-30
 TICKS = int(0)     #increment this whenever the simulation is running, gives second, use it to calculate the day of the week and the time.
 SIM_RUN = False    # use this for start and freeze sim
-
+PYGAME_RUNNING = False
 
 SCREEN_WIDTH = 1388
 SCREEN_HEIGHT = 800
@@ -316,7 +316,8 @@ class Machine():
             # set_mc_status_running(self)
         if self.workstation != None:
             if self.status_running and self.runtime >= self.workstation.run_time:
-                self.workstation.buffer +=1  #add function to update the next
+                self.workstation.buffer +=1
+                self.workstation.produced +=1
 
                 set_mc_status_setup_over(self)
 
@@ -368,6 +369,7 @@ class Config():
         self.wb = xlrd.open_workbook(filename,on_demand = True)
         self.machine_list_sheet = self.wb.sheet_by_name('Machines')
         self.layout_sheet = self.wb.sheet_by_name('Layout')
+        self.financial_sheet = self.wb.sheet_by_name('Financial')
 
         self.demand = []
         self.demand_pos = []
@@ -378,17 +380,24 @@ class Config():
 
         self.workstations = []
         self.workstation_pos = []
+
+        self.account_cash_balance = 0
+        self.account_fixed_expense = 0
         
         self.machine_list =[]
 
-        self.links_list =[]
+        self.links_list = []
 
         self.update_machine_list()
+        self.update_account()
         self.update_layout()
         self.update_links()
         
         self.close_file()
-        
+
+    def update_account(self):
+        self.account_cash_balance = int(self.financial_sheet.cell_value(1,1))
+        self.account_fixed_expense = int(self.financial_sheet.cell_value(2,1))
 
     def update_layout(self):
         for i in range(9):
@@ -462,82 +471,220 @@ class Text():
         pass 
 
 class Account():
-    def __init__(self):
-        self.balance = 0
+    def __init__(self,size,pos,cash,fixed_expense):
 
-    def add(amt):
-        self.balance += amt
+        self.pos = pos
+
+        self.sur = pygame.Surface(size)
+        self.sur.fill(LIGHT_GREY)
+
+        self.rect = self.sur.get_rect(center=pos)
+
+        self.day = 1
+        self.time = "0 : 00"
+        self.cash  = cash
+        self.fixed_expense = fixed_expense
+        
+
+        self.cash_text_l1 = Text("Cash :",(100,25),20,LIGHT_GREY)
+        self.cash_text_l2 = Text(str(self.cash) ,(100,50),20,LIGHT_GREY)
+
+        self.fixed_expnense_text_l1 = Text("Fixed Expense : ",(100,75),20,LIGHT_GREY)
+        self.fixed_expnense_text_l2 = Text(str(self.fixed_expense),(100,90),20,LIGHT_GREY)
+
+    def update(self):
+        self.cash_text_l1 = Text("Cash :",(self.pos[0],self.pos[1]-40),14,LIGHT_GREY)
+        self.cash_text_l2 = Text(str(self.cash) ,(self.pos[0],self.pos[1]-20),20,LIGHT_GREY)
+
+        self.fixed_expnense_text_l1 = Text("Fixed Expense : ",(self.pos[0],self.pos[1]+20),14,LIGHT_GREY)
+        self.fixed_expnense_text_l2 = Text(str(self.fixed_expense),(self.pos[0],self.pos[1]+40),20,LIGHT_GREY)
+
+
+    def draw(self, surface):
+        surface.blit(self.sur, self.rect)
+        self.cash_text_l1.draw(surface)
+        self.cash_text_l2.draw(surface)
+        self.fixed_expnense_text_l1.draw(surface)
+        self.fixed_expnense_text_l2.draw(surface)
+
+    def add(self,amt):
+        self.cash += amt
         return True
 
-    def buy(amt):
-        if self.balance >= amt:
-            self.balance -= amt
+    def buy(self,amt):
+        if self.cash >= amt:
+            self.cash -= amt
             return True
         else:
             return False
 
-pwbr_power = 0
-pwbr_duration = 0
-pwbr_scrn_refresh = 0
-pwbr_elps_time = 0
-pwbr_ttl_sec = 0
-
-
-class Popup(tk.Frame):
-    def __init__(self, master=None):
-        # tk.Frame.__init__(self, master)
-        # self.grid()
-        # self.createwidgets()
-    # __init__() ---------------------------------------------------------------
+    def handle_event(self, event):
         pass
 
-    def createwidgets(self):
-        """
-        Creates the numerous widgets that make up the form.
-        """
-         
-        global pwbr_power, pwbr_duration, pwbr_scrn_refresh, pwbr_elps_time
-        global pwbr_ttl_sec
-         
-        pwbr_power += 1
-        pwbr_duration += 0.15
-        pwbr_elps_time += pwbr_duration
-        pwbr_scrn_refresh = 0.333
-        pwbr_ttl_sec += pwbr_elps_time
- 
-        if pwbr_elps_time > pwbr_scrn_refresh:
-            pwbr_elps_time = 0
-            pwbr_duration = 0
- 
-        caption_pwr = "Power: " + str(pwbr_power)
-        caption_dur = "Duration: " + str(pwbr_duration)
-        caption_rfrsh =  "Screen Refresh: " + str(pwbr_scrn_refresh)
-        caption_etime = "Elapsed time: " + str(pwbr_elps_time)
-        caption_ttl = "Total sec's: " + str(pwbr_ttl_sec)
-         
-        self.lblpower = tk.Label(self, text=caption_pwr, fg="black")
-        self.lblduration = tk.Label(self, text=caption_dur, fg="black")
-        self.lblrefreshrate = tk.Label(self, text=caption_rfrsh, fg="black")
-        self.lbletime = tk.Label(self, text=caption_etime, fg="black")
-        self.lbltotalsec = tk.Label(self, text=caption_ttl, fg="black")
-         
-        self.quitButton = tk.Button(self, text='Quit', command=self.quit)
-         
-        self.lblpower.grid()
-        self.lblduration.grid()
-        self.lblrefreshrate.grid()
-        self.lbletime.grid()
-        self.lbltotalsec.grid()
-        self.quitButton.grid()
-        self.update()
-         
+class InsufficientBalanceError(Exception):
+    '''
+    raise when insufficient balance to make purchase
+    '''
+    pass
+
+class Rm_popup():
+    def __init__(self,account,rm):
+        self.stop_pygame()
+        self.root = tk.Tk()
+        self.root.geometry("400x100")
+        self.root.title("Buy raw material") 
+        self.rm = rm
+        self.message = ""
+        self.account = account
+
+        self.display_form()
+    def stop_pygame(self):
+        global PYGAME_RUNNING
+        PYGAME_RUNNING = False
+
+    def display_form(self):
+        quantity = tk.Label(self.root, text="         Enter the quanity         :  ", bg="LIGHT GREY")  	# create a Name label
+        
+        dummy = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
+        message = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
+
+        dummy.grid(row=1,column=0)
+        message.grid(row=3,column=1)
+        quantity.grid(row=2, column=0)
+
+        self.quantity_field = tk.Entry(self.root)
+        self.quantity_field.bind("<Return>", self.focus1) 
+        self.quantity_field.grid(row=2, column=1, ipadx="20") 
+
+        submit = tk.Button(self.root, text="OK", fg="Black", 
+          bg="Grey", command=self.insert)
+        submit.grid(row=4, column=1) 
+
+        self.root.mainloop()
+
+    def update_message(self):
+        message = tk.Label(self.root, text=self.message,bg="light grey")  	# create a Name label
+        message.grid(row=3,column=0)
+    
+    def insert(self): 
+        if (self.quantity_field.get() == ""): 
+            self.message = "     Enter some value      "
+            self.update_message()
+        else:
+            try:
+                if int(self.quantity_field.get()) > 0 :
+                    self.make_purchase()
+            except InsufficientBalanceError:
+                self.clear()
+                self.message = "   Insufficient Balance   "
+                self.update_message()
+            except:
+                self.clear()
+                self.message = "Enter numeric values only"
+                self.update_message()
+
+    def make_purchase(self):
+        global PYGAME_RUNNING
+        if self.account.buy(self.rm.cost_price*int(self.quantity_field.get())):
+            self.root.destroy()
+            PYGAME_RUNNING = True
+        else:
+            raise InsufficientBalanceError
+        
+    def focus1(self,event): 
+	    self.quantity_field.focus_set() 
+
+    def clear(self):  
+	    self.quantity_field.delete(0, tk.END) 
+
+class ProdLimitLessThanProduced(Exception):
+    '''
+    raise when insufficient balance to make purchase
+    '''
+    pass
+
+class Ws_popup():
+    def __init__(self,ws):
+        self.stop_pygame()
+        self.root = tk.Tk()
+        self.root.geometry("400x100")
+        self.root.title("Set production limits") 
+        self.ws = ws
+        self.message = ""
+        
+        self.display_form()
+    def stop_pygame(self):
+        global PYGAME_RUNNING
+        PYGAME_RUNNING = False
+
+    def display_form(self):
+        quantity = tk.Label(self.root, text="         Enter the Limit         :  ", bg="LIGHT GREY")  	# create a Name label
+        
+        dummy = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
+        message = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
+
+        dummy.grid(row=1,column=0)
+        message.grid(row=3,column=1)
+        quantity.grid(row=2, column=0)
+
+        self.quantity_field = tk.Entry(self.root)
+        self.quantity_field.insert(0, str(self.ws.prod_limit) )
+        
+        self.quantity_field.bind("<Return>", self.focus1) 
+        self.quantity_field.grid(row=2, column=1, ipadx="20") 
+
+        submit = tk.Button(self.root, text="OK", fg="Black", 
+          bg="Grey", command=self.insert)
+        submit.grid(row=4, column=1) 
+
+        self.root.mainloop()
+
+    def update_message(self):
+        message = tk.Label(self.root, text=self.message,bg="light grey")  	# create a Name label
+        message.grid(row=3,column=0)
+    
+    def insert(self): 
+        if (self.quantity_field.get() == ""): 
+            self.message = "     Enter some value      "
+            self.update_message()
+        else:
+            try:
+                self.set_limit()
+            except ProdLimitLessThanProduced:
+                self.clear()
+                self.message = "Limit can't be less than produced quanity"
+                self.update_message()
+            except:
+                self.clear()
+                self.message = "Enter numeric values only"
+                self.update_message()
+
+    def set_limit(self):
+        global PYGAME_RUNNING
+
+        if int(self.quantity_field.get()) > self.ws.produced:
+            self.ws.prod_limit = int(self.quantity_field.get())
+            self.root.destroy()
+            PYGAME_RUNNING = True
+        else:
+            raise ProdLimitLessThanProduced
+        
+    def focus1(self,event): 
+	    self.quantity_field.focus_set() 
+
+    def clear(self):  
+	    self.quantity_field.delete(0, tk.END) 
+
+
 class Demand():
-    def __init__(self,item,pos):
+    def __init__(self,item,pos,account):
         self.id = item[0]
         self.prev = []
-        
+
+        self.account = account
+      
         self.buffer = int(item[1])
-        self.selling_price = item[2]
+        self.selling_price = int(item[2])
         
         self.sur = pygame.Surface((52, 32))
         self.sur.fill(BACKGROUND)
@@ -553,14 +700,25 @@ class Demand():
         self.text = Text("0",(self.pos[0],self.pos[1]) ,16,WHITE)
         
     def update(self):
+        global SIM_RUN
+
+        if SIM_RUN:
+            self.update_demand()
+
         global display_quantity
-        #check state of mode and then pass approporitate value
         if display_quantity:
             self.text = Text(str(self.buffer),(self.pos[0],self.pos[1]) ,16,WHITE)
         else:
             self.text = Text("$ "+str(self.selling_price),(self.pos[0],self.pos[1] ) ,16,WHITE)    
 
         pass
+    
+    def update_demand(self):
+        for ws in self.prev:
+            if ws.buffer >0 and self.buffer > 0:
+                self.buffer -= 1
+                ws.buffer -=1
+                self.account.add(self.selling_price)
     
     def set_status(self):
         pass
@@ -598,12 +756,13 @@ class Links():
             pass
 
 class RawMaterial():
-    def __init__(self,item,pos):
+    def __init__(self,item,pos,account):
         global layout_elements
         self.next = []
         self.id = item[0]
         self.buffer = int(item[1])
-        self.cost_price = item[2]
+        self.cost_price = int(item[2])
+        self.account = account
 
         self.sur = pygame.Surface((52, 32))
         self.sur.fill(BACKGROUND)
@@ -636,12 +795,12 @@ class RawMaterial():
         self.text.draw(surface)
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # pop = rm_popup("rm")
-            # pop.master.title("Power Bar")
+        if event.type == pygame.MOUSEBUTTONUP:
+            if self.rect.collidepoint(event.pos):
+                pop = Rm_popup(self.account,self)
+            # pop.master.title("Enter")
             # pop.mainloop()
-            pass
-
+            
 class Workstation():
     def __init__(self,item,pos):
         global layout_elements
@@ -738,10 +897,8 @@ class Workstation():
         
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # pop = rm_popup("rm")
-            # pop.master.title("Power Bar")
-            # pop.mainloop()
-            pass
+            if self.rect.collidepoint(event.pos):
+                pop = Ws_popup(self)
 
     def set_ws_status(self):
         if len(self.machines)>0:   #atleast 1 machine added to workstation
@@ -761,7 +918,7 @@ class Workstation():
         # if sufficient buffer in the dependecies and under limit
             # start production
         if len(self.machines)>0:   #atleast 1 machine added to workstation    
-            if self.produced <= self.prod_limit:  # check for production limit
+            if self.produced < self.prod_limit:  # check for production limit
                 for mc in self.machines:
                     # print(mc.id,mc.status_idle,mc.status_setup,mc.status_setup_over,mc.status_running)
                     if mc.status_setup_over and self.check_up_buffer():
@@ -789,18 +946,18 @@ class Workstation():
 
         # self.under_process += 1 
 
-    def set_machine_status(self):
-        if self.status_idle:
-            for mc in self.machines:
-                self.set_mc_status_idle(mc)
-        elif self.status_setup:
-            for mc in self.machines:
-                self.set_mc_status_setup(mc)
-                #reduce the buffers
-                self.update_up_buffer()
-        elif self.status_running:
-            for mc in self.machines:
-                self.set_mc_status_running(mc)
+    # def set_machine_status(self):
+    #     if self.status_idle:
+    #         for mc in self.machines:
+    #             set_mc_status_idle(mc)
+    #     elif self.status_setup:
+    #         for mc in self.machines:
+    #             set_mc_status_setup(mc)
+    #             #reduce the buffers
+    #             self.update_up_buffer()
+    #     elif self.status_running:
+    #         for mc in self.machines:
+    #             set_mc_status_running(mc)
                 
     def set_ws_no_machine(self):
         self.status_no_machine = True
@@ -823,6 +980,8 @@ class Layout():
         self.elements = []
         self.links_list = ''
         self.grid()
+        self.time = None
+        self.account = None
         
     def grid(self):
         global RM_list
@@ -831,10 +990,11 @@ class Layout():
         global machines
 
         config = Config("Config.xlsx")
+        self.time_accounts(config)
         self.add_machine_pane(config)
         self.add_factory(config)
         self.interface_buttons()
-        self.time_accounts()
+
     
     def update(self):
         # self.interface_buttons()
@@ -860,13 +1020,14 @@ class Layout():
         main_control = Sim_control((120,80),(75,400),GREEN,RED)
         self.elements.append(main_control)
 
-        # main_control2 = Sim_control((120,80),(75,600),GREEN,RED)
-        # self.elements.append(main_control2)
 
-    def time_accounts(self):
-        main_control1 = Display_time((120,80),(75,500))
-        self.elements.append(main_control1)
-        pass
+
+    def time_accounts(self,config):
+        self.time = Display_time((120,80),(75,500))
+        self.elements.append(self.time)
+
+        self.account = Account((120,120),(75,640), config.account_cash_balance,config.account_fixed_expense)
+        self.elements.append(self.account)
 
     def add_factory(self,config):
                 #add labels
@@ -875,13 +1036,13 @@ class Layout():
 
             # add raw material row
         for item in range(len(config.raw_material)):
-            rm = RawMaterial(config.raw_material[item],config.raw_material_pos[item])
+            rm = RawMaterial(config.raw_material[item],config.raw_material_pos[item],self.account)
             self.elements.append(rm)
             all_objects.append(rm)
 
         #add demand row
         for item in range(len(config.demand)):
-            dmd = Demand(config.demand[item],config.demand_pos[item])
+            dmd = Demand(config.demand[item],config.demand_pos[item],self.account)
             self.elements.append(dmd)
             all_objects.append(dmd)
 
@@ -956,8 +1117,10 @@ class App():
         pygame.init()
         pygame.display.set_caption('Goldratt Simulator') 
         # pygame.freetype.set_default_resolution(30)
+        
+        infoObject = pygame.display.Info()
 
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((infoObject.current_w, infoObject.current_h), pygame.RESIZABLE)
         self.screen_rect = self.screen.get_rect()
 
         self.clock = pygame.time.Clock()
@@ -1063,19 +1226,22 @@ class App():
     # --- mainloop --- (don't change it)
 
     def mainloop(self):
+        global PYGAME_RUNNING
 
+        # PYGAME_RUNNING = True
         self.is_running = True
 
-        while self.is_running:
+        while self.is_running :
 
             for event in pygame.event.get():
 
                 if event.type == pygame.QUIT:
                     self.is_running = False
+                    # PYGAME_RUNNING = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.is_running = False
-
+                        # PYGAME_RUNNING = False
                 # --- objects events ---
 
                 self.handle_event(event)
@@ -1091,12 +1257,6 @@ class App():
             pygame.display.update()
 
             self.clock.tick(FRAME_RATE)   #FPS
-
-            # a = pygame.display.get_window_size()
-
-            # print (a)
-
-            # print("tick")
 
         self.quit()
 
