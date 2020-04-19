@@ -1285,7 +1285,7 @@ class App():
         global PYGAME_RUNNING
 
         PYGAME_RUNNING = True
-        # self.is_running = True
+        # self.is_running = True   # to ensure that the poup doesnt go behind the pygame windows
 
         while PYGAME_RUNNING :
             for event in pygame.event.get():
