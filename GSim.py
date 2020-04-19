@@ -36,21 +36,16 @@ CYAN =  (  0,   255, 255)
 
 BACKGROUND = ( 255, 255, 230)
 
-
-
 display_quantity = True
 layout_elements = {}
 
+ACCOUNT = None
 
+demand_objects = []
 workstation_objects = []
 all_objects = [] #list of all workstations, demand and raw materials
 machines =[]    # list of all machine objects
-
 RM_list = ["A","B","C","D","E","F","G","H"]
-
-# print(layout_elements)
-
-
 class Button():
     def __init__(self,size,pos,default_color,pressed_color):
 
@@ -63,7 +58,6 @@ class Button():
         self.image = self.image_normal
         
         self.rect = self.image.get_rect(center=pos)
-        #self.rect.center = screen_rect.center
 
         self.clicked = False
 
@@ -78,16 +72,12 @@ class Button():
     def special_operation(self):
         pass 
 
-        
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
     def handle_event(self, event):
         pass
-
-
 class Toggle_button(Button):
-
     def special_operation(self):
         global display_quantity
         display_quantity = self.clicked
@@ -96,39 +86,39 @@ class Toggle_button(Button):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
                 self.clicked = not self.clicked
-
+class Report_button(Button):
+    def special_operation(self):
+        self.clicked = False
+    
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.rect.collidepoint(event.pos):
+                self.clicked = True
+                pop = Report_popup()
 class Inc_spd_button(Button):
-
     def special_operation(self):
         global SIM_SPEEED
         if self.clicked and SIM_SPEEED < 31:
             SIM_SPEEED += 3
 
-        # print(SIM_SPEEED)
         self.clicked = False
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
                 self.clicked = True
-
 class Dec_spd_button(Button):
-
     def special_operation(self):
         global SIM_SPEEED
         if self.clicked and SIM_SPEEED > 1:
             SIM_SPEEED -= 3
 
-        # print(SIM_SPEEED)
         self.clicked = False
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
                 self.clicked = True
-
-
-
 class Sim_control():
     def __init__(self,size,pos,run_color,stopped_color):
         self.run_color = run_color
@@ -143,9 +133,7 @@ class Sim_control():
 
         self.status = "STOPPED"
 
-        # self.PACE_text = Text(self.grid_loc,(100,100) ,20,WHITE)
         self.status_text = Text(self.status,(100,100),20,WHITE)
-        # self.hovered = False
         self.clicked = False
 
     def update(self):
@@ -155,34 +143,28 @@ class Sim_control():
             self.status = "RUNNING"
             self.color = self.run_color
             SIM_RUN = True
-
         else:
             self.status = "STOPPED"
             self.color = self.stopped_color
             SIM_RUN = False
 
         self.sur.fill(self.color)
-        # self.gird_loc_text = Text(self.grid_loc,(self.pos[0],self.pos[1] - 5) ,16,self.color)
         self.status_text = Text(self.status,(self.pos[0],self.pos[1]),26,self.color)
         
     def draw(self, surface):
         surface.blit(self.sur, self.rect)
-        # self.gird_loc_text.draw(surface)
         self.status_text.draw(surface)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
-                self.clicked = not self.clicked
-       
+                self.clicked = not self.clicked  
 class Display_time(Button):
     def __init__(self,size,pos):
-
         self.pos = pos
 
         self.sur = pygame.Surface(size)
         self.sur.fill(LIGHT_GREY)
-
         self.rect = self.sur.get_rect(center=pos)
 
         self.day = 1
@@ -196,28 +178,23 @@ class Display_time(Button):
         self.time_text = Text(self.time,(self.pos[0],self.pos[1] + 20),18,LIGHT_GREY)
         
     def draw(self, surface):
-        # print("Draw function called?")
         surface.blit(self.sur, self.rect)
         self.day_text.draw(surface)
         self.time_text.draw(surface)
 
     def compute_time(self):
         global TICKS
-        # print("Tick" , TICKS)
         a = TICKS
         self.time = ""
         self.day =  int( a / (8*60))
         a = a%(8*60)
-        self.time = self.time + str( int(a/60)) + " : " +  str( int(a%60))
-        
-
-
+        self.time = self.time + str( int(a/60)) + " : " +  ("0" + str( int(a%60)))[-2:]
 class Machine():
     def __init__(self,pos,item):
-        # super(Machine,self).__init__()
         self.id = item[0]   #check if this is required
 
         self.sur = pygame.Surface((50,50))
+        self.color_text = item[0].capitalize()
         self.color = BLACK
         self.update_color(item[0].capitalize())
         self.sur.fill(self.color)
@@ -248,8 +225,6 @@ class Machine():
         self.gird_loc_text = Text(self.grid_loc,(self.pos[0],self.pos[1] - 5) ,16,self.color)
         self.status_text = Text(self.status,(self.pos[0],self.pos[1] + 10),14,self.color)
 
-
-        # self.hovered = False
         self.clicked = False
 
     def update_color(self , clr):
@@ -267,7 +242,6 @@ class Machine():
             self.color = BROWN
     
     def update(self):
-        
         if self.clicked:
             self.sur.fill(LIGHT_GREY)
         else:
@@ -282,7 +256,6 @@ class Machine():
         if self.status_setup:
             self.status = "Setup"
             
-        
         self.gird_loc_text = Text(self.grid_loc,(self.pos[0],self.pos[1] - 5) ,16,self.color)
         self.status_text = Text(self.status,(self.pos[0],self.pos[1] + 10),14,self.color)
         
@@ -297,23 +270,18 @@ class Machine():
                 self.clicked = True
 
         if self.clicked:
-
             if event.type == pygame.MOUSEBUTTONUP:
                 self.clicked = False
                 self.pos = self.pane_pos
                 self.add_machine_to_ws(event.pos)  #add machine to workstation
-                # print(event.pos,"next line")
 
             if event.type == pygame.MOUSEMOTION:        
                 self.pos = event.pos
     
     def set_status(self):
-        # print("inside set_status")
         self.update_timer()
-        # print(self.setuptime , self.runtime)
         if self.status_setup and  self.setuptime >= self.setup_time :
             set_mc_status_setup_over(self)
-            # set_mc_status_running(self)
         if self.workstation != None:
             if self.status_running and self.runtime >= self.workstation.run_time:
                 self.workstation.buffer +=1
@@ -321,14 +289,15 @@ class Machine():
 
                 set_mc_status_setup_over(self)
 
-
     def update_timer(self):        
         if self.status_setup:
             self.setuptime += 1
+            self.total_setuptime += 1
             self.runtime = 0
         if self.status_running:
             self.setuptime = 0
             self.runtime += 1
+            self.total_runtime +=1
         if self.status_idle or self.status_setup_over:
             self.setuptime = 0
             self.runtime =0  
@@ -337,20 +306,16 @@ class Machine():
         global workstation_objects
         for item in workstation_objects:
             if (pos[0] > item.rect.left) and (pos[0] < item.rect.right) and (pos[1] > item.rect.top) and (pos[1] < item.rect.bottom):
-                # print("inside",pos)
                 self.check_machine_add(item)
                 break
 
     def check_machine_add(self,ws):
         if self.color == ws.color:
-            # if current status is running, convert
             if not self in ws.machines:
                 if (self.workstation != ws and self.workstation != None):
                     if self.status_running:
                         self.workstation.prev[0].buffer +=1
                     self.workstation.machines.remove(self)
-                    # print("Machine removed form original ws")
-                    
 
                 self.workstation = ws
 
@@ -358,10 +323,7 @@ class Machine():
                 self.grid_loc = ws.grid_loc
                 set_mc_status_setup(self)
 
-
-                print(ws.grid_loc)
-                # print("Machine added")
-
+                print(ws.grid_loc)        
 class Config():
     def __init__(self,filename):
         self.file = filename
@@ -414,23 +376,13 @@ class Config():
             if ( self.layout_sheet.cell_value(1,1+i) != '' ):
                 self.demand.append(self.layout_sheet.cell_value(1, 1+i).split(","))
                 self.demand_pos.append((1, 1+i))
-
-        # print (self.demand_pos)
-        # print (int(self.demand[1][1])  + 3 )
-
-        # print (self.raw_material_pos)
-        # print (self.raw_material)
-        # print (self.workstation_pos)
-        
-               
+              
 
     def update_machine_list(self):
         for i in range(self.machine_list_sheet.nrows - 1):
             self.machine_list.append( [self.machine_list_sheet.cell_value(1+i, 0),
                                         self.machine_list_sheet.cell_value(1+i, 1),
-                                        self.machine_list_sheet.cell_value(1+i, 2)] )
-        # print (self.machine_list)
-    
+                                        self.machine_list_sheet.cell_value(1+i, 2)] )    
     # generate tuples of start point, end point
 
     def update_links(self):
@@ -448,7 +400,6 @@ class Config():
     def close_file(self):
         self.wb.release_resources()
         del self.wb
-
 class Text():
     def __init__(self,text,pos,size,bg=BACKGROUND):
         self.font = pygame.font.SysFont('calibri', size) 
@@ -469,7 +420,6 @@ class Text():
     
     def __del__(self):
         pass 
-
 class Account():
     def __init__(self,size,pos,cash,fixed_expense):
 
@@ -483,9 +433,10 @@ class Account():
         self.day = 1
         self.time = "0 : 00"
         self.cash  = cash
+        self.sales = 0 
+        self.inv_purchases = 0 
         self.fixed_expense = fixed_expense
         
-
         self.cash_text_l1 = Text("Cash :",(100,25),20,LIGHT_GREY)
         self.cash_text_l2 = Text(str(self.cash) ,(100,50),20,LIGHT_GREY)
 
@@ -509,29 +460,29 @@ class Account():
 
     def add(self,amt):
         self.cash += amt
+        self.sales += amt
         return True
 
     def buy(self,amt):
         if self.cash >= amt:
             self.cash -= amt
+            self.inv_purchases += amt
             return True
         else:
             return False
 
     def handle_event(self, event):
         pass
-
 class InsufficientBalanceError(Exception):
     '''
     raise when insufficient balance to make purchase
     '''
     pass
-
 class Rm_popup():
     def __init__(self,account,rm):
         self.stop_pygame()
         self.root = tk.Tk()
-        self.root.geometry("400x100")
+        self.root.geometry("400x120")
         self.root.title("Buy raw material") 
         self.rm = rm
         self.message = ""
@@ -541,14 +492,16 @@ class Rm_popup():
     def stop_pygame(self):
         global PYGAME_RUNNING
         PYGAME_RUNNING = False
+    
+    def close_window(self): 
+        global PYGAME_RUNNING
+        PYGAME_RUNNING = True       
+        self.root.destroy()
 
     def display_form(self):
-        quantity = tk.Label(self.root, text="         Enter the quanity         :  ", bg="LIGHT GREY")  	# create a Name label
+        quantity = tk.Label(self.root, text="         Enter the quanity         :  ", pady= 20)  	# create a Name label
         
-        dummy = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
-        message = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
-
-        dummy.grid(row=1,column=0)
+        message = tk.Label(self.root, text="",fg="Red")  	# create a Name label
         message.grid(row=3,column=1)
         quantity.grid(row=2, column=0)
 
@@ -557,18 +510,18 @@ class Rm_popup():
         self.quantity_field.grid(row=2, column=1, ipadx="20") 
 
         submit = tk.Button(self.root, text="OK", fg="Black", 
-          bg="Grey", command=self.insert)
+          bg="Grey", command=self.close_window)
         submit.grid(row=4, column=1) 
-
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)
         self.root.mainloop()
 
     def update_message(self):
-        message = tk.Label(self.root, text=self.message,bg="light grey")  	# create a Name label
+        message = tk.Label(self.root, text=self.message,fg="Red")  	# create a Name label
         message.grid(row=3,column=0)
     
     def insert(self): 
         if (self.quantity_field.get() == ""): 
-            self.message = "     Enter some value      "
+            self.message = "        Enter some value         "
             self.update_message()
         else:
             try:
@@ -576,17 +529,17 @@ class Rm_popup():
                     self.make_purchase()
             except InsufficientBalanceError:
                 self.clear()
-                self.message = "   Insufficient Balance   "
+                self.message = "      Insufficient Balance       "
                 self.update_message()
             except:
                 self.clear()
-                self.message = "Enter numeric values only"
+                self.message = "    Enter numeric values only    "
                 self.update_message()
 
     def make_purchase(self):
         global PYGAME_RUNNING
         if self.account.buy(self.rm.cost_price*int(self.quantity_field.get())):
-            self.root.destroy()
+            self.close_window()
             PYGAME_RUNNING = True
         else:
             raise InsufficientBalanceError
@@ -596,18 +549,16 @@ class Rm_popup():
 
     def clear(self):  
 	    self.quantity_field.delete(0, tk.END) 
-
 class ProdLimitLessThanProduced(Exception):
     '''
     raise when insufficient balance to make purchase
     '''
     pass
-
 class Ws_popup():
     def __init__(self,ws):
         self.stop_pygame()
         self.root = tk.Tk()
-        self.root.geometry("400x100")
+        self.root.geometry("400x120")
         self.root.title("Set production limits") 
         self.ws = ws
         self.message = ""
@@ -617,13 +568,16 @@ class Ws_popup():
         global PYGAME_RUNNING
         PYGAME_RUNNING = False
 
-    def display_form(self):
-        quantity = tk.Label(self.root, text="         Enter the Limit         :  ", bg="LIGHT GREY")  	# create a Name label
-        
-        dummy = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
-        message = tk.Label(self.root, text="",bg="light grey")  	# create a Name label
+    def close_window(self): 
+        global PYGAME_RUNNING
+        PYGAME_RUNNING = True       
+        self.root.destroy()
 
-        dummy.grid(row=1,column=0)
+    def display_form(self):
+        quantity = tk.Label(self.root, text="         Enter the Limit         :  ", pady = 20)  	# create a Name label
+        
+        message = tk.Label(self.root, text="", fg="Red")  	# create a Name label
+
         message.grid(row=3,column=1)
         quantity.grid(row=2, column=0)
 
@@ -634,18 +588,19 @@ class Ws_popup():
         self.quantity_field.grid(row=2, column=1, ipadx="20") 
 
         submit = tk.Button(self.root, text="OK", fg="Black", 
-          bg="Grey", command=self.insert)
+          bg="Grey", command=self.close_window)
         submit.grid(row=4, column=1) 
-
+        
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)
         self.root.mainloop()
 
     def update_message(self):
-        message = tk.Label(self.root, text=self.message,bg="light grey")  	# create a Name label
+        message = tk.Label(self.root, text=self.message,fg="Red")  	# create a Name label
         message.grid(row=3,column=0)
     
     def insert(self): 
         if (self.quantity_field.get() == ""): 
-            self.message = "     Enter some value      "
+            self.message = "           Enter some value            "
             self.update_message()
         else:
             try:
@@ -656,7 +611,7 @@ class Ws_popup():
                 self.update_message()
             except:
                 self.clear()
-                self.message = "Enter numeric values only"
+                self.message = "   Enter numeric values only   "
                 self.update_message()
 
     def set_limit(self):
@@ -664,7 +619,7 @@ class Ws_popup():
 
         if int(self.quantity_field.get()) > self.ws.produced:
             self.ws.prod_limit = int(self.quantity_field.get())
-            self.root.destroy()
+            self.close_window()
             PYGAME_RUNNING = True
         else:
             raise ProdLimitLessThanProduced
@@ -674,15 +629,146 @@ class Ws_popup():
 
     def clear(self):  
 	    self.quantity_field.delete(0, tk.END) 
+class Report_popup():
+    def __init__(self):
+        self.stop_pygame()
+        self.root = tk.Tk()
+        self.root.geometry("800x700")
+        self.root.title("Simulation financial statement") 
+        
+        self.profit = 0
+        self.cash = 0
+        self.roi = 0
+        self.sales = 0
+        self.opex = 0
+
+        self.display_form()
+    def stop_pygame(self):
+        global PYGAME_RUNNING
+        PYGAME_RUNNING = False
+
+    def display_form(self):
+        left = tk.Frame(self.root,width=400,height = 700)
+        right = tk.Frame(self.root,width=400,height = 700)
+        bottom = tk.Frame(self.root)
+
+        # self.root.grid_rowconfigure(1, weight=1)
+        # self.root.grid_columnconfigure(0, weight=1)
+        
+        left.grid(row=0, column=0, sticky="nsew",padx=10,pady=10)
+        right.grid(row=0, column=1, sticky="nsew",padx=10,pady=10)
+        bottom.grid(row=1, columnspan=2, sticky="ew")
+
+        fin = tk.Frame(left, borderwidth=2, relief="groove")
+        sales = tk.Frame(left, borderwidth=2, relief="groove")
+        resource = tk.Frame(right, borderwidth=2, relief="groove")
+
+        resource.grid(row=1,column=0,sticky="nsew",padx=20,pady=20)
+        fin.grid(row=1,column=0,sticky="nsew",padx=20,pady=20)
+        sales.grid(row=2,column=0,sticky="nsew",padx=20,pady=20)
+
+        fin_label = tk.Label(fin, text=" Financial Statement ").grid(row=0,column=0,columnspan=3,sticky="ew",padx=100,pady=20)
+        resource_label = tk.Label(resource, text=" Resource Utilization ").grid(row=0,columnspan=3,sticky="ew",padx=50,pady=20)
+
+        sales_label = tk.Label(sales, text="Sales Summary").grid(row=0,column=0,columnspan=3, sticky="ew",padx=100,pady=20)
+
+        submit = tk.Button(bottom, text="OK", fg="Black", command=self.close_window).grid(row=0,padx=30,pady=0,sticky="ew")
+        
+        self.populate_fin(fin)
+        self.populate_sales(sales)
+        self.populate_resource(resource)
+
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)
+
+        self.root.mainloop()
+
+    def populate_resource(self, resource):
+        global machines
+        global TICKS 
+        
+        machine_label = tk.Label(resource, text="%").grid(row=1,column=0,padx=20,pady=10)
+        prod_label = tk.Label(resource, text="Production").grid(row=1,column=1,padx=20,pady=10)
+        Setup_label = tk.Label(resource, text="Set-up").grid(row=1,column=2,padx=20,pady=10)
+
+        i = 1
+
+        machines_temp = {}
+
+        for mc in machines:
+            if mc.color_text not in machines_temp:
+                machines_temp.update({mc.color_text: [mc.total_runtime,mc.total_setuptime,TICKS] })
+            else:
+                machines_temp[mc.color_text][0] += mc.total_runtime
+                machines_temp[mc.color_text][1] += mc.total_setuptime
+                machines_temp[mc.color_text][2] += TICKS
+        
+        i=1
+        print (machines_temp)
+
+        for mc in machines_temp:
+            if TICKS >0:
+                i +=1
+                tk.Label(resource, text=mc).grid(row=i,column=0,pady=5)
+                tk.Label(resource, text=str( round(100*machines_temp[mc][0]/machines_temp[mc][2],2)  ) ).grid(row=i,column=1,pady=5)
+                tk.Label(resource, text=str(round(100*machines_temp[mc][1]/machines_temp[mc][2],2)   )).grid(row=i,column=2,pady=5)
+
+    def populate_sales(self,sales):
+        global demand_objects
+        
+        product_label = tk.Label(sales, text="Prouct").grid(row=1,column=0,padx=20,pady=10)
+        Demand_label = tk.Label(sales, text="Demand").grid(row=1,column=1,padx=20,pady=10)
+        sales_label = tk.Label(sales, text="Sold").grid(row=1,column=2,padx=20,pady=10)
+
+        i = 1
+        for dem in demand_objects:
+            i += 1
+            tk.Label(sales, text=dem.grid_loc[:1]).grid(row=i,column=0,pady=5)
+            tk.Label(sales, text=str(dem.demand)).grid(row=i,column=1,pady=5)
+            tk.Label(sales, text=str( dem.demand - dem.buffer)).grid(row=i,column=2,pady=5)
+
+    def populate_fin(self,parent_frame):
+
+        self.calculate_fin()
+        frame_labels = tk.Frame(parent_frame, padx=10, pady=20)
+        frame_labels.grid(row=1,column=0,sticky="ew")
+
+        frame_vals = tk.Frame(parent_frame, padx=10, pady=20)
+        frame_vals.grid(row=1,column=1,sticky="ew")
+
+        profit_label  = tk.Label(frame_labels, text=" Net Profit                  :").grid(row=1,column=0,pady=10)
+        cash_label  = tk.Label(frame_labels, text=" End of Week Cash   :").grid(row=2,column=0,pady=10)
+        roi_label  = tk.Label(frame_labels, text=" ROI(%)                       : ").grid(row=3,column=0,pady=10)
+        sales_label  = tk.Label(frame_labels, text=" Sales                           :").grid(row=4,column=0,pady=10)
+        opex_label  = tk.Label(frame_labels, text=" Operating Expense    :").grid(row=5,column=0,pady=10)
+
+        profit_val  = tk.Label(frame_vals, text=str(self.profit)).grid(row=1,column=1,pady=10)
+        cash_val  = tk.Label(frame_vals, text=str(self.cash)).grid(row=2,column=1,pady=10)
+        roi_val  = tk.Label(frame_vals, text=str(self.roi)).grid(row=3,column=1,pady=10)
+        sales_val  = tk.Label(frame_vals, text=str(self.sales)).grid(row=4,column=1,pady=10)
+        opex_val  = tk.Label(frame_vals, text=str(self.opex)).grid(row=5,column=1,pady=10)
 
 
+    def calculate_fin(self):
+        global ACCOUNT
+        self.cash = ACCOUNT.cash
+        self.sales = ACCOUNT.sales
+        self.opex = ACCOUNT.fixed_expense
+        self.profit = self.sales - self.opex - ACCOUNT.inv_purchases
+        self.roi = round((self.sales / (self.opex + ACCOUNT.inv_purchases) ),2)
+
+    def close_window(self): 
+        global PYGAME_RUNNING
+        PYGAME_RUNNING = True       
+        self.root.destroy()
 class Demand():
     def __init__(self,item,pos,account):
+        global RM_list
+        self.grid_loc = RM_list[pos[1]-1] + str(9 - pos[0])
         self.id = item[0]
         self.prev = []
 
         self.account = account
-      
+        self.demand = int(item[1])
         self.buffer = int(item[1])
         self.selling_price = int(item[2])
         
@@ -730,7 +816,6 @@ class Demand():
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             pass
-
 class Links():
     def __init__(self,item):
         global layout_elements
@@ -754,7 +839,6 @@ class Links():
             # pop.master.title("Power Bar")
             # pop.mainloop()
             pass
-
 class RawMaterial():
     def __init__(self,item,pos,account):
         global layout_elements
@@ -797,16 +881,12 @@ class RawMaterial():
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONUP:
             if self.rect.collidepoint(event.pos):
-                pop = Rm_popup(self.account,self)
-            # pop.master.title("Enter")
-            # pop.mainloop()
-            
+                pop = Rm_popup(self.account,self)          
 class Workstation():
     def __init__(self,item,pos):
         global layout_elements
         global RM_list
         self.details = item
-        #what kind of machine
         self.id = item[0]
         self.next = []
         self.prev = []
@@ -818,8 +898,6 @@ class Workstation():
         self.status_no_machine = True
         self.status_not_running = False
         self.status_running = False
-
-        # print(self.grid_loc)
 
         self.sur = pygame.Surface((52, 57))
         self.sur.fill(BACKGROUND)
@@ -837,8 +915,6 @@ class Workstation():
         self.process_time_text = Text("0",(self.pos[0],self.pos[1] + 15),16,self.color)
 
         self.rect = self.sur.get_rect(center= self.pos )
-
-        # add machine object --> need to check documentation
         
         self.buffer = int(item[3])
         self.under_process = 0
@@ -865,7 +941,6 @@ class Workstation():
         elif clr.capitalize() == "Brown":
             self.color = BROWN
 
-
     def update(self):
         self.set_ws_status()
         
@@ -885,7 +960,6 @@ class Workstation():
             self.process_time_text = Text(str(self.run_time),(self.pos[0],self.pos[1] + 15),16,self.color)
         elif self.status_not_running:
             self.process_time_text = Text("+"+str(self.run_time),(self.pos[0],self.pos[1] + 15),16,self.color)
-
 
     def set_status(self):
         self.update_mc_ws_status()          
@@ -920,12 +994,9 @@ class Workstation():
         if len(self.machines)>0:   #atleast 1 machine added to workstation    
             if self.produced < self.prod_limit:  # check for production limit
                 for mc in self.machines:
-                    # print(mc.id,mc.status_idle,mc.status_setup,mc.status_setup_over,mc.status_running)
                     if mc.status_setup_over and self.check_up_buffer():
                         set_mc_status_running(mc)
                         self.update_up_buffer()
-                        # print(self.id, self.prev[0].id)
-                    # print(mc.id,mc.status_idle,mc.status_setup,mc.status_setup_over,mc.status_running)
             else:
                 for mc in self.machines:
                     set_mc_status_setup_over(mc)
@@ -973,7 +1044,6 @@ class Workstation():
         self.status_no_machine = False
         self.status_not_running = False
         self.status_running = True
-
 class Layout():
     def __init__(self):
         self.temp = 0
@@ -995,9 +1065,7 @@ class Layout():
         self.add_factory(config)
         self.interface_buttons()
 
-    
     def update(self):
-        # self.interface_buttons()
         pass
 
     def interface_buttons(self):
@@ -1006,6 +1074,11 @@ class Layout():
         btn_text = Text("Toggle",(75,30) ,16, LIGHT_GREY)
         self.elements.append(btn)
         self.elements.append(btn_text)
+
+        report_btn = Report_button((80,30),(75, 80),GREY,LIGHT_GREY)    #Toggle buttons
+        report_btn_text = Text("Report",(75,80) ,16, LIGHT_GREY)
+        self.elements.append(report_btn)
+        self.elements.append(report_btn_text)
 
         inc_spd_btn = Inc_spd_button((30,30),(110, 325),GREY,LIGHT_GREY)    #sim speed inc buttons
         inc_spd_text = Text("+",(110,325) ,24, LIGHT_GREY)
@@ -1020,16 +1093,17 @@ class Layout():
         main_control = Sim_control((120,80),(75,400),GREEN,RED)
         self.elements.append(main_control)
 
-
-
     def time_accounts(self,config):
+        global ACCOUNT
+
         self.time = Display_time((120,80),(75,500))
         self.elements.append(self.time)
 
-        self.account = Account((120,120),(75,640), config.account_cash_balance,config.account_fixed_expense)
+        ACCOUNT = self.account = Account((120,120),(75,640), config.account_cash_balance,config.account_fixed_expense)
         self.elements.append(self.account)
 
     def add_factory(self,config):
+        global demand_objects
                 #add labels
         self.elements.append( Text("RM",(500,775),16))
         self.elements.append( Text("Demand",(500,25),16))
@@ -1045,6 +1119,7 @@ class Layout():
             dmd = Demand(config.demand[item],config.demand_pos[item],self.account)
             self.elements.append(dmd)
             all_objects.append(dmd)
+            demand_objects.append(dmd)
 
         #add workstations
         for item in range(len(config.workstations)):
@@ -1052,7 +1127,7 @@ class Layout():
             self.elements.append(ws)
             workstation_objects.append(ws)
             all_objects.append(ws)
-    
+
     def add_machine_pane(self,config):
         for i in range(9):
             txt = Text(str(9-i),(500,100 +i*75),16)
@@ -1110,7 +1185,6 @@ def set_mc_status_running(mc):
     mc.status_setup = False
     mc.status_setup_over = False
     mc.update_timer()
-
 class App():
     def __init__(self):
 
@@ -1141,7 +1215,6 @@ class App():
         global layout_elements
         global workstation_objects
         global all_objects
-        # self.widgets.append(layout.elements[1])
         
         layout_elements = {}
         layout = Layout() 
@@ -1153,28 +1226,21 @@ class App():
         for ele in layout.elements:
             self.widgets.append(ele)
     
-        # update downstream(successor) and upsteam(predecessor)
+        # update downstream(successor) and upsteam(predecessor), all pointers 
         for item in workstation_objects:
             for xws in all_objects:
                 for ws in item.details[4].split("-"):
-                    # print("upstream loop")
-                    # print (ws, xws.id)
                     if str(ws) == str(xws.id):
                         if item not in xws.next:
                             xws.next.append(item)
                         if xws not in item.prev:
                             item.prev.append(xws)
-                        # print("some operaiton")
                 for ws in item.details[5].split("-"):
-                    # print("downsteam loop")
                     if str(ws) == str(xws.id):
                         if xws not in item.next:
                             item.next.append(xws)
                         if item not in xws.prev:
                             xws.prev.append(item)
-                        # print("some operaiton 3")
-            
-            # print(item.next[0].buffer)
 
 
     def handle_event(self, event):
@@ -1186,20 +1252,16 @@ class App():
         global machines
         global SIM_RUN
        
-        # self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT),pygame.RESIZABLE)
         for widget in self.widgets:
             widget.update()
 
         if SIM_RUN:
             self.update_statuses()
-            
-     
-    
+
     def update_statuses(self):
         global TICKS
 
         self.loopno += 1
-        
 
         if self.loopno >= int(FRAME_RATE / ( 1 + SIM_SPEEED)):
             TICKS += 1
@@ -1208,42 +1270,33 @@ class App():
                 ele.set_status()
             for mc in machines:
                 mc.set_status()
-                # print("tick")
-
-
-
+    
     def draw(self, surface):
-
-        # lines = Lines()
+        #draw lines connecting ws
         for i in range(len(self.list)):
             pygame.draw.aaline(surface,BLACK, layout_elements[ self.list[i][0] ], layout_elements[  self.list[i][1] ] )
 
         for widget in self.widgets:
             widget.draw(surface)
 
-        #pygame.display.update()
-
     # --- mainloop --- (don't change it)
 
     def mainloop(self):
         global PYGAME_RUNNING
 
-        # PYGAME_RUNNING = True
-        self.is_running = True
+        PYGAME_RUNNING = True
+        # self.is_running = True
 
-        while self.is_running :
-
+        while PYGAME_RUNNING :
             for event in pygame.event.get():
-
                 if event.type == pygame.QUIT:
-                    self.is_running = False
-                    # PYGAME_RUNNING = False
+                    # self.is_running = False
+                    PYGAME_RUNNING = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        self.is_running = False
-                        # PYGAME_RUNNING = False
+                        # self.is_running = False
+                        PYGAME_RUNNING = False
                 # --- objects events ---
-
                 self.handle_event(event)
 
             self.update()
@@ -1251,15 +1304,11 @@ class App():
             # --- draws ---
 
             self.screen.fill(BACKGROUND)
-
             self.draw(self.screen)
-
             pygame.display.update()
-
             self.clock.tick(FRAME_RATE)   #FPS
 
         self.quit()
-
 
 if __name__ == '__main__':
         
