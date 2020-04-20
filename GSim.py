@@ -510,7 +510,7 @@ class Rm_popup():
         self.quantity_field.grid(row=2, column=1, ipadx="20") 
 
         submit = tk.Button(self.root, text="OK", fg="Black", 
-          bg="Grey", command=self.close_window)
+          bg="Grey", command=self.insert)
         submit.grid(row=4, column=1) 
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
         self.root.mainloop()
@@ -539,6 +539,7 @@ class Rm_popup():
     def make_purchase(self):
         global PYGAME_RUNNING
         if self.account.buy(self.rm.cost_price*int(self.quantity_field.get())):
+            self.rm.buffer += int(self.quantity_field.get())
             self.close_window()
             PYGAME_RUNNING = True
         else:
@@ -549,6 +550,7 @@ class Rm_popup():
 
     def clear(self):  
 	    self.quantity_field.delete(0, tk.END) 
+        
 class ProdLimitLessThanProduced(Exception):
     '''
     raise when insufficient balance to make purchase
@@ -588,7 +590,7 @@ class Ws_popup():
         self.quantity_field.grid(row=2, column=1, ipadx="20") 
 
         submit = tk.Button(self.root, text="OK", fg="Black", 
-          bg="Grey", command=self.close_window)
+          bg="Grey", command=self.insert)
         submit.grid(row=4, column=1) 
         
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
@@ -676,7 +678,7 @@ class Report_popup():
         
         self.populate_fin(fin)
         self.populate_sales(sales)
-        self.populate_resource(resource)
+        # self.populate_resource(resource)
 
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
 
@@ -1273,8 +1275,13 @@ class App():
     
     def draw(self, surface):
         #draw lines connecting ws
+        print (layout_elements)
+        print (self.list)
+
         for i in range(len(self.list)):
+            # print ("OK till" , i, self.list[i][0],self.list[i][1])
             pygame.draw.aaline(surface,BLACK, layout_elements[ self.list[i][0] ], layout_elements[  self.list[i][1] ] )
+            pass
 
         for widget in self.widgets:
             widget.draw(surface)
