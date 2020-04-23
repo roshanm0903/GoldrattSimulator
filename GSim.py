@@ -1282,8 +1282,6 @@ class App():
     
     def draw(self, surface):
         #draw lines connecting ws
-        # print (layout_elements)
-        # print (self.list)
         # print("Drawing objects on the screen")
         for i in range(len(self.list)):
             # print ("OK till" , i, self.list[i][0],self.list[i][1])
