@@ -326,12 +326,14 @@ class Machine():
                 print(ws.grid_loc)        
 class Config():
     def __init__(self,filename):
+        print("config running")
         self.file = filename
-        
+        print("opening Excel")
         self.wb = xlrd.open_workbook(filename,on_demand = True)
         self.machine_list_sheet = self.wb.sheet_by_name('Machines')
         self.layout_sheet = self.wb.sheet_by_name('Layout')
         self.financial_sheet = self.wb.sheet_by_name('Financial')
+        print("Excel opened")
 
         self.demand = []
         self.demand_pos = []
@@ -356,7 +358,9 @@ class Config():
         self.update_links()
         
         self.close_file()
-
+        print("Data imported")
+        print("Excel closed")
+        
     def update_account(self):
         self.account_cash_balance = int(self.financial_sheet.cell_value(1,1))
         self.account_fixed_expense = int(self.financial_sheet.cell_value(2,1))
@@ -678,7 +682,7 @@ class Report_popup():
         
         self.populate_fin(fin)
         self.populate_sales(sales)
-        # self.populate_resource(resource)
+        self.populate_resource(resource)
 
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
 
@@ -705,7 +709,8 @@ class Report_popup():
                 machines_temp[mc.color_text][2] += TICKS
         
         i=1
-        print (machines_temp)
+        # print("inside machines")
+        # print (machines_temp)
 
         for mc in machines_temp:
             if TICKS >0:
@@ -1189,10 +1194,11 @@ def set_mc_status_running(mc):
     mc.update_timer()
 class App():
     def __init__(self):
-
+        print("Initializing Pygame")
         pygame.init()
         pygame.display.set_caption('Goldratt Simulator') 
         # pygame.freetype.set_default_resolution(30)
+        print("Pygame initialized")
         
         infoObject = pygame.display.Info()
 
@@ -1214,6 +1220,7 @@ class App():
         pygame.quit()
 
     def create_objects(self):
+        print("Creating objects on the screen")
         global layout_elements
         global workstation_objects
         global all_objects
@@ -1275,9 +1282,9 @@ class App():
     
     def draw(self, surface):
         #draw lines connecting ws
-        print (layout_elements)
-        print (self.list)
-
+        # print (layout_elements)
+        # print (self.list)
+        # print("Drawing objects on the screen")
         for i in range(len(self.list)):
             # print ("OK till" , i, self.list[i][0],self.list[i][1])
             pygame.draw.aaline(surface,BLACK, layout_elements[ self.list[i][0] ], layout_elements[  self.list[i][1] ] )
@@ -1287,7 +1294,7 @@ class App():
             widget.draw(surface)
 
     # --- mainloop --- (don't change it)
-
+        # print("Objects drawn on the screen")
     def mainloop(self):
         global PYGAME_RUNNING
 
@@ -1318,5 +1325,5 @@ class App():
         self.quit()
 
 if __name__ == '__main__':
-        
+    print("python script started running")
     App().mainloop()
